@@ -1,26 +1,31 @@
-#include <Arduino.h>
-
 // Dependencies
+#include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 #include <ESPAsyncWebServer.h>
 #include <WiFi.h>
 #include <Stepper.h>
 
 #define NUMPIXELS 1
-#define relayPin 2
+#define relayPin 15
 #define touchPin 4
 #define touchSensitivity 10
 #define hallPin 34
 
 bool theShow = false;
-bool waterLevel;
+bool waterLevel = false;
 bool manualMode = false;
-byte color = 0;
-byte relayState = 0;
-byte brightness = 80;
+bool relayState = false;
+bool stateChange = false; // turns true upon async call - ensures the relay initializes in ON state of the cycle (always)
 
-int touchVal = 0;
-int manualInterval = 10000;
+byte color = 0;
+byte brightness = 80;
+byte touchVal = 0;
+
+int manualInterval = 30000;  // life of manualMode
+
+unsigned long previousMillis2 = 0;        // will store last time LED was updated
+unsigned long OnTime = 10000;           // defualt fog cycle
+unsigned long OffTime = 20000  - OnTime;
 
 const char *wifi_network_ssid = "hotispot";
 const char *wifi_network_password = "maas-1004";
@@ -28,7 +33,7 @@ const char *soft_ap_ssid = "FarmHouse Pod 3";
 const char *soft_ap_password = "maas-1004";
 
 Adafruit_NeoPixel pixels(1, 14, NEO_GRB + NEO_KHZ800);
-AsyncWebServer server(80);
+AsyncWebServer server(80); // accessible on port 80
 
 void serverCalls()
 {
@@ -37,11 +42,11 @@ void serverCalls()
 
   server.on("/ron", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-  relayState = 1;
-    request->send(200, "text/plain", "relay on"); });
+  relayState = 0;
+    request->send(200, "text/plain", "relay on"); }); // inverted logic (Common anode)
   server.on("/roff", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-  relayState = 0;
+  relayState = 1;
     request->send(200, "text/plain", "relay off"); });
 
   server.on("/mg", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -69,6 +74,26 @@ void serverCalls()
             {
     request->send(200, "text/plain", "Mini now in auto mode");
     manualMode = false; });
+
+  server.on("/cycle10", HTTP_GET, [](AsyncWebServerRequest * request){
+      OnTime = 600000;
+      OffTime = 1200000 - OnTime;
+      stateChange = true;
+      request->send(200, "text/plain", "10 min cycle set");
+       });
+  server.on("/cycle6", HTTP_GET, [](AsyncWebServerRequest * request){
+      OnTime = 360000;
+      OffTime = 1200000 - OnTime;
+      stateChange = true;
+      request->send(200, "text/plain", "6 min cycle set");
+       });
+  server.on("/10s", HTTP_GET, [](AsyncWebServerRequest * request){
+      OnTime = 5000;
+      OffTime = 10000 - OnTime;
+      stateChange = true;
+      request->send(200, "text/plain", "6 min cycle set");
+       });
+  
 }
 
 void wifiSetup()
@@ -138,6 +163,7 @@ void pixelColor(void)
 void waterAlert()
 {
   // NEOPIXELS INTRO
+  digitalWrite(relayPin, HIGH); // turn relay OFF if ON
   pixels.begin();
   pixels.clear();
   pixels.setBrightness(brightness);
@@ -183,7 +209,7 @@ void manualModeF()
   {
     Serial.println("in mm loop");
     pixelColor();
-    if (relayState == 1)
+    if (relayState)
       digitalWrite(relayPin, HIGH);
     else
       digitalWrite(relayPin, LOW);
@@ -192,16 +218,16 @@ void manualModeF()
   return;
 }
 
-void loop()
-{
+void loop() {
 
-  // ideal run -->
+  // check for water level
   waterLevel = digitalRead(hallPin);
 
-  // if water level is low, then you can't to the magic show
-  if (waterLevel == 1)
-    waterAlert();
-  else if (touchVal < touchSensitivity)
+if (waterLevel == 0) {
+  color = 1;
+  if(manualMode) 
+    manualModeF();
+  if (touchVal < touchSensitivity)
     miniShow();
 
   touchVal = touchRead(touchPin); // get the touch value
@@ -209,9 +235,28 @@ void loop()
   pixels.setBrightness(200);
   pixels.fill(pixels.Color(255, 0, 255));
   pixels.show();
-  // relay and light cycle
 
-  // manual controls (limited) -->
-  if (manualMode)
-    manualModeF();
+  // relay cycle
+  unsigned long currentMillis = millis();
+
+ if((relayState == false) && (currentMillis - previousMillis2 >= OnTime) && !stateChange)
+  {
+    relayState = HIGH;  // Turn relay off
+    previousMillis2 = currentMillis;  // Remember the time
+    digitalWrite(relayPin, relayState);  // Update the actual LED
+    stateChange = false; // set stateChange to false
+  }
+  else if ((relayState == true) && (currentMillis - previousMillis2 >= OffTime)  || stateChange)
+  {
+    relayState = LOW;  // Turn relay on
+    previousMillis2 = currentMillis;  
+    digitalWrite(relayPin, relayState);   
+    stateChange = false;
+  }
+}   
+// if water level is low, raise alert
+else 
+  waterAlert();
 }
+
+//to do - check waterlevel and exit manual mode if it's 0
