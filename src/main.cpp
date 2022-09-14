@@ -5,7 +5,8 @@
 #include <WiFi.h>
 #include <Stepper.h>
 
-#define NUMPIXELS 1
+// Hard coded definitions (pins and values)
+#define NUMPIXELS 1 
 #define relayPin 15
 #define touchPin 4
 #define touchSensitivity 10
@@ -18,11 +19,11 @@ bool relayState = false;
 bool stateChange = false; // turns true upon async call - ensures the relay initializes in ON state of the cycle (always)
 bool waterVal = false;
 
-byte color = 0;
-byte brightness = 80;
+byte color = 0;      
+byte brightness = 200; 
 byte touchVal = 0;
 
-int manualInterval = 30000;  // life of manualMode
+unsigned int manualInterval = 30000;  // life of manualMode
 
 unsigned long previousMillis2 = 0;        // will store last time LED was updated
 unsigned long OnTime = 10000;           // defualt fog cycle
@@ -33,6 +34,7 @@ const char *wifi_network_password = "maas-1004";
 const char *soft_ap_ssid = "FarmHouse Pod 3";
 const char *soft_ap_password = "maas-1004";
 
+// Initialize neopixels
 Adafruit_NeoPixel pixels(1, 14, NEO_GRB + NEO_KHZ800);
 AsyncWebServer server(80); // accessible on port 80
 
@@ -128,43 +130,38 @@ void setup()
   pinMode(relayPin, OUTPUT);
   pinMode(hallPin, INPUT);
 
-  wifiSetup();
+  wifiSetup(); // Establish connection via WiFi
 
-  serverCalls();
+  serverCalls(); //Async request handler
 
   server.begin();
 }
 
 void pixelColor(void)
 {
-
-  pixels.setBrightness(200);
-  if (color == 0)
-  {
-    pixels.fill(pixels.Color(255, 0, 255));
-    pixels.show();
-  }
-  else if (color == 1)
-  {
-    pixels.fill(pixels.Color(0, 255, 255));
-    pixels.show();
-  }
-  else if (color == 2)
-  {
-    pixels.clear();
-    pixels.show();
-  }
-  else if (color == 10)
-  {
-    pixels.fill(pixels.Color(255, 5, 5));
-    pixels.show();
+  pixels.setBrightness(brightness);
+  switch (color){
+    case 0:  // Magenta
+      pixels.fill(pixels.Color(255, 0, 255));
+      pixels.show();
+      break;
+    case 1:  // CYAN
+      pixels.fill(pixels.Color(0, 255, 255));
+      pixels.show();
+    case 2:  // led OFF
+       pixels.clear();
+       pixels.show();
+       break;
+    case 10:  // RED
+        pixels.fill(pixels.Color(255, 5, 5));
+        pixels.show();
+        break;
   }
 }
 
 void waterAlert()
 {
-  // NEOPIXELS INTRO
-  manualMode = false;
+  manualMode = false; // get out of Manual mode
   digitalWrite(relayPin, HIGH); // turn relay OFF if ON
   pixels.begin();
   pixels.clear();
@@ -189,6 +186,7 @@ void waterAlert()
 
 void miniShow()
 {
+  digitalWrite(relayPin, LOW); // turn relay ON
   pixels.setBrightness(100);
   for (int i = 0; i < 5; i++)
   {
@@ -199,6 +197,7 @@ void miniShow()
     pixels.show();
     delay(100);
   }
+  digitalWrite(relayPin, HIGH); // turn relay OFF before exiting the function
 }
 
 void manualModeF()
@@ -227,7 +226,7 @@ void loop() {
   // check for water level
   waterLevel = digitalRead(hallPin);
 
-if (waterLevel == 0) {
+if (!waterLevel) {
   color = 1;
   if(manualMode) 
     manualModeF();
@@ -263,4 +262,3 @@ else
   waterAlert();
 }
 
-//to do - check waterlevel and exit manual mode if it's 0
