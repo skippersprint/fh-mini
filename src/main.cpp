@@ -202,14 +202,11 @@ void miniShow()
 
 void manualModeF()
 {
-
-  Serial.println("in mm");
   int previousMillis = 0;
   previousMillis = millis();
 
   while (millis() <= previousMillis + manualInterval && manualMode == true && !digitalRead(hallPin))
   {
-    Serial.println("in mm loop");
     pixelColor();
     if (relayState)
       digitalWrite(relayPin, HIGH);
