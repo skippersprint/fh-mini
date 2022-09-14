@@ -16,6 +16,7 @@ bool waterLevel = false;
 bool manualMode = false;
 bool relayState = false;
 bool stateChange = false; // turns true upon async call - ensures the relay initializes in ON state of the cycle (always)
+bool waterVal = false;
 
 byte color = 0;
 byte brightness = 80;
@@ -163,6 +164,7 @@ void pixelColor(void)
 void waterAlert()
 {
   // NEOPIXELS INTRO
+  manualMode = false;
   digitalWrite(relayPin, HIGH); // turn relay OFF if ON
   pixels.begin();
   pixels.clear();
@@ -201,11 +203,12 @@ void miniShow()
 
 void manualModeF()
 {
+
   Serial.println("in mm");
   int previousMillis = 0;
   previousMillis = millis();
 
-  while (millis() <= previousMillis + manualInterval && manualMode == true)
+  while (millis() <= previousMillis + manualInterval && manualMode == true && !digitalRead(hallPin))
   {
     Serial.println("in mm loop");
     pixelColor();
@@ -214,9 +217,10 @@ void manualModeF()
     else
       digitalWrite(relayPin, LOW);
   }
+  
   manualMode = false;
   return;
-}
+  }
 
 void loop() {
 
