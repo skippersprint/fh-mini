@@ -11,7 +11,13 @@
 #define touchPin 4
 #define touchSensitivity 10
 #define hallPin 34
+const int stepsPerRevolution = 2048;  // change this to fit the number of steps per revolution
 
+// ULN2003 Motor Driver Pins
+#define IN1 21
+#define IN2 19
+#define IN3 18
+#define IN4 5
 bool theShow = false;
 bool waterLevel = false;
 bool manualMode = false;
@@ -37,6 +43,7 @@ const char *soft_ap_password = "maas-1004";
 // Initialize neopixels
 Adafruit_NeoPixel pixels(1, 14, NEO_GRB + NEO_KHZ800);
 AsyncWebServer server(80); // accessible on port 80
+Stepper myStepper(stepsPerRevolution, IN1, IN3, IN2, IN4);
 
 void serverCalls()
 {
@@ -129,7 +136,7 @@ void setup()
   Serial.begin(115200);
   pinMode(relayPin, OUTPUT);
   pinMode(hallPin, INPUT);
-
+  myStepper.setSpeed(5);
   wifiSetup(); // Establish connection via WiFi
 
   serverCalls(); //Async request handler
@@ -257,5 +264,14 @@ if (!waterLevel) {
 // if water level is low, raise alert
 else 
   waterAlert();
+
+   Serial.println("clockwise");
+  myStepper.step(stepsPerRevolution);
+  delay(1000);
+
+  // step one revolution in the other direction:
+  Serial.println("counterclockwise");
+  myStepper.step(-stepsPerRevolution);
+  delay(1000);
 }
 
