@@ -18,6 +18,7 @@ const int stepsPerRevolution = 2048;  // change this to fit the number of steps 
 #define IN2 19
 #define IN3 18
 #define IN4 5
+
 bool theShow = false;
 bool waterLevel = false;
 bool manualMode = false;
@@ -28,8 +29,9 @@ bool waterVal = false;
 byte color = 0;      
 byte brightness = 200; 
 byte touchVal = 0;
+short rotation = -1;
 
-unsigned int manualInterval = 30000;  // life of manualMode
+unsigned short manualInterval = 30000;  // life of manualMode
 
 unsigned long previousMillis2 = 0;        // will store last time LED was updated
 unsigned long OnTime = 10000;           // defualt fog cycle
@@ -47,62 +49,90 @@ Stepper myStepper(stepsPerRevolution, IN1, IN3, IN2, IN4);
 
 void serverCalls()
 {
-  server.on("/hello", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(200, "text/plain", "Connection sweet"); });
+  server.on("/hello", HTTP_GET, [](AsyncWebServerRequest *request) { 
+    request->send(200, "text/plain", "Connection sweet"); 
+    });
 
-  server.on("/ron", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-  relayState = 0;
-    request->send(200, "text/plain", "relay on"); }); // inverted logic (Common anode)
-  server.on("/roff", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-  relayState = 1;
-    request->send(200, "text/plain", "relay off"); });
+  server.on("/ron", HTTP_GET, [](AsyncWebServerRequest *request) {
+    relayState = 0;
+    request->send(200, "text/plain", "relay on"); 
+  }); // inverted logic (Common anode)
 
-  server.on("/mg", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
+  server.on("/roff", HTTP_GET, [](AsyncWebServerRequest *request) {
+    relayState = 1;
+    request->send(200, "text/plain", "relay off"); 
+  });
+
+  server.on("/mg", HTTP_GET, [](AsyncWebServerRequest *request) {
     color = 0;
-    request->send(200, "text/plain", "magenta"); });
-  server.on("/cy", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-  
-    request->send(200, "text/plain", "cyan");
-    color = 1; });
-  server.on("/ledon", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    request->send(200, "text/plain", "NEO ON");
-    color = 0; });
-  server.on("/ledoff", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    request->send(200, "text/plain", "NEO OFF");
-    color = 2; });
-  server.on("/manualMode", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    request->send(200, "text/plain", "Control Mini manually");
-    manualMode = true; });
-  server.on("/autoMode", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    request->send(200, "text/plain", "Mini now in auto mode");
-    manualMode = false; });
+    request->send(200, "text/plain", "magenta"); 
+  });
 
-  server.on("/cycle10", HTTP_GET, [](AsyncWebServerRequest * request){
-      OnTime = 600000;
-      OffTime = 1200000 - OnTime;
-      stateChange = true;
-      request->send(200, "text/plain", "10 min cycle set");
-       });
-  server.on("/cycle6", HTTP_GET, [](AsyncWebServerRequest * request){
+  server.on("/cy", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "cyan");
+    color = 1;
+  });
+
+  server.on("/ledon", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "NEO ON");
+    color = 0; 
+  });
+
+  server.on("/ledoff", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "NEO OFF");
+    color = 2; 
+  });
+
+  server.on("/manualMode", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "Control Mini manually");
+    manualMode = true; 
+  });
+
+  server.on("/autoMode", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "Mini now in auto mode");
+    manualMode = false; 
+  });
+    
+  server.on("/ron", HTTP_GET, [](AsyncWebServerRequest *request) {
+    relayState = 0;
+    request->send(200, "text/plain", "relay on"); 
+  });
+
+  server.on("/turnC", HTTP_GET, [](AsyncWebServerRequest *request) {
+    rotation = 1;
+    request->send(200, "text/plain", "clockwise"); 
+  });
+
+  server.on("/turnA", HTTP_GET, [](AsyncWebServerRequest *request) {
+    rotation = -1;
+    request->send(200, "text/plain", "anti-clockwise"); 
+  });
+
+  server.on("/turnoff", HTTP_GET, [](AsyncWebServerRequest *request) {
+    rotation = 0;
+    request->send(200, "text/plain", "OFF"); 
+  });
+
+  server.on("/cycle10", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 600000;
+    OffTime = 1200000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "10 min cycle set");
+  });
+
+  server.on("/cycle6", HTTP_GET, [](AsyncWebServerRequest * request) {
       OnTime = 360000;
       OffTime = 1200000 - OnTime;
       stateChange = true;
       request->send(200, "text/plain", "6 min cycle set");
-       });
-  server.on("/10s", HTTP_GET, [](AsyncWebServerRequest * request){
-      OnTime = 5000;
-      OffTime = 10000 - OnTime;
-      stateChange = true;
-      request->send(200, "text/plain", "6 min cycle set");
-       });
+  });
+
+  server.on("/10s", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 5000;
+    OffTime = 10000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "6 min cycle set");
+  });
   
 }
 
@@ -219,6 +249,8 @@ void manualModeF()
       digitalWrite(relayPin, HIGH);
     else
       digitalWrite(relayPin, LOW);
+    
+    myStepper.step(rotation);
   }
   
   manualMode = false;
@@ -260,18 +292,11 @@ if (!waterLevel) {
     digitalWrite(relayPin, relayState);   
     stateChange = false;
   }
+  Serial.println(rotation);
+  myStepper.step(rotation);
 }   
 // if water level is low, raise alert
 else 
   waterAlert();
-
-   Serial.println("clockwise");
-  myStepper.step(stepsPerRevolution);
-  delay(1000);
-
-  // step one revolution in the other direction:
-  Serial.println("counterclockwise");
-  myStepper.step(-stepsPerRevolution);
-  delay(1000);
 }
 
