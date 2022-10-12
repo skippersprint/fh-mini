@@ -7,7 +7,7 @@
 
 // Hard coded definitions (pins and values)
 #define NUMPIXELS 1 
-#define relayPin 15
+#define relayPin 2
 #define touchPin 4
 #define touchSensitivity 10
 #define hallPin 34
@@ -31,7 +31,7 @@ byte brightness = 200;
 byte touchVal = 0;
 short rotation = -1;
 
-unsigned short manualInterval = 30000;  // life of manualMode
+unsigned short manualInterval = 30000;  // life of manualMode - in sync with timeout on App as well. App says - You will kill me!
 
 unsigned long previousMillis2 = 0;        // will store last time LED was updated
 unsigned long OnTime = 10000;           // defualt fog cycle
@@ -53,12 +53,12 @@ void serverCalls()
     request->send(200, "text/plain", "Connection sweet"); 
     });
 
-  server.on("/ron", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/20", HTTP_GET, [](AsyncWebServerRequest *request) {
     relayState = 0;
     request->send(200, "text/plain", "relay on"); 
   }); // inverted logic (Common anode)
 
-  server.on("/roff", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/40", HTTP_GET, [](AsyncWebServerRequest *request) {
     relayState = 1;
     request->send(200, "text/plain", "relay off"); 
   });
@@ -93,45 +93,41 @@ void serverCalls()
     manualMode = false; 
   });
     
-  server.on("/ron", HTTP_GET, [](AsyncWebServerRequest *request) {
-    relayState = 0;
-    request->send(200, "text/plain", "relay on"); 
-  });
 
-  server.on("/turnC", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/spin2", HTTP_GET, [](AsyncWebServerRequest *request) {
     rotation = 1;
     request->send(200, "text/plain", "clockwise"); 
   });
 
-  server.on("/turnA", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/spin/0", HTTP_GET, [](AsyncWebServerRequest *request) {
     rotation = -1;
     request->send(200, "text/plain", "anti-clockwise"); 
   });
 
-  server.on("/turnoff", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/spin/1", HTTP_GET, [](AsyncWebServerRequest *request) {
     rotation = 0;
-    request->send(200, "text/plain", "OFF"); 
+    request->send(200, "text/plain", "halt"); 
   });
 
-  server.on("/cycle10", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/2", HTTP_GET, [](AsyncWebServerRequest * request) {
     OnTime = 600000;
     OffTime = 1200000 - OnTime;
     stateChange = true;
     request->send(200, "text/plain", "10 min cycle set");
   });
 
-  server.on("/cycle6", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/1", HTTP_GET, [](AsyncWebServerRequest * request) {
       OnTime = 360000;
       OffTime = 1200000 - OnTime;
       stateChange = true;
-      request->send(200, "text/plain", "6 min cycle set");
+      request->send(200, "text/plain", "5 min cycle set");
   });
 
-  server.on("/10s", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/0", HTTP_GET, [](AsyncWebServerRequest * request) {
     OnTime = 5000;
     OffTime = 10000 - OnTime;
     stateChange = true;
-    request->send(200, "text/plain", "6 min cycle set");
+    request->send(200, "text/plain", "10 s cycle set");
   });
   
 }
