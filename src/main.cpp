@@ -31,6 +31,10 @@ byte brightness = 200;
 byte touchVal = 0;
 short rotation = -1;
 
+String hexString = "Color(0xff00ff57)";
+int alphaVal = 200;
+int hexVal = 16516088;
+
 unsigned short manualInterval = 30000;  // life of manualMode - in sync with timeout on App as well. App says - You will kill me!
 
 unsigned long previousMillis2 = 0;        // will store last time LED was updated
@@ -81,6 +85,14 @@ void serverCalls()
   server.on("/ledoff", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "NEO OFF");
     color = 2; 
+  });
+
+  server.on("/hex", HTTP_GET, [](AsyncWebServerRequest *request) {
+      hexString = request->getParam("hexCode")->value();   
+      alphaVal = strtol(hexString.substring(8,10).c_str(), NULL, 16);
+      hexVal = strtol(hexString.substring(10,16).c_str(), NULL, 16);
+  
+    request->send(200, "text/plain", "magenta"); 
   });
 
   server.on("/manualMode", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -240,7 +252,10 @@ void manualModeF()
 
   while (millis() <= previousMillis + manualInterval && manualMode == true && !digitalRead(hallPin))
   {
-    pixelColor();
+    pixels.setBrightness(alphaVal);
+    pixels.setPixelColor(0, hexVal);
+    pixels.show();
+    Serial.println(hexVal);
     if (relayState)
       digitalWrite(relayPin, HIGH);
     else
@@ -250,7 +265,7 @@ void manualModeF()
   }
   
   manualMode = false;
-  return;
+  
   }
 
 void loop() {
@@ -288,7 +303,6 @@ if (!waterLevel) {
     digitalWrite(relayPin, relayState);   
     stateChange = false;
   }
-  Serial.println(rotation);
   myStepper.step(rotation);
 }   
 // if water level is low, raise alert
