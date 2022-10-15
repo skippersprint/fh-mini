@@ -41,6 +41,10 @@ const char *wifi_network_ssid = "hotispot";
 const char *wifi_network_password = "maas-1004";
 const char *soft_ap_ssid = "FarmHouse Pod 3";
 const char *soft_ap_password = "maas-1004";
+const char* PARAM_INPUT_1 = "hexCode";
+
+String colorr = "Color(0xff00ff57)";
+
 
 // Initialize neopixels
 Adafruit_NeoPixel pixels(1, 14, NEO_GRB + NEO_KHZ800);
@@ -65,6 +69,15 @@ void serverCalls()
 
   server.on("/mg", HTTP_GET, [](AsyncWebServerRequest *request) {
     color = 0;
+    request->send(200, "text/plain", "magenta"); 
+  });
+
+  server.on("/hex", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String inputHex;
+    if (request->hasParam(PARAM_INPUT_1)) {
+      inputHex = request->getParam(PARAM_INPUT_1)->value();
+      colorr = inputHex;
+    }
     request->send(200, "text/plain", "magenta"); 
   });
 
@@ -175,12 +188,14 @@ void pixelColor(void)
   pixels.setBrightness(brightness);
   switch (color){
     case 0:  // Magenta
-      pixels.fill(pixels.Color(255, 0, 255));
+    Serial.println("Color set to Magenta");
+      pixels.setPixelColor(0, 0x7e3eff00);
       pixels.show();
       break;
     case 1:  // CYAN
       pixels.fill(pixels.Color(0, 255, 255));
       pixels.show();
+      Serial.println("Color set to Cyan");
     case 2:  // led OFF
        pixels.clear();
        pixels.show();
@@ -188,9 +203,47 @@ void pixelColor(void)
     case 10:  // RED
         pixels.fill(pixels.Color(255, 5, 5));
         pixels.show();
+        Serial.println("Color set to Red");
         break;
   }
 }
+
+
+void loop() {
+
+
+ 
+  String color = colorr.substring(10, 16);
+  String alpha = colorr.substring(8,10);
+  int alphaVal = strtol(alpha.c_str(), NULL, 16);
+
+
+  int hexVal = strtol(color.c_str(), NULL, 16);
+
+    pixels.setPixelColor(0, hexVal);
+    pixels.setBrightness(alphaVal);
+    pixels.show();
+    Serial.println(colorr);
+    Serial.println(hexVal);
+    
+    //delay(1000);
+
+    //Serial.println(strtol(hexColor.c_str(), NULL, 16));
+ 
+}   
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void waterAlert()
 {
@@ -252,47 +305,3 @@ void manualModeF()
   manualMode = false;
   return;
   }
-
-void loop() {
-
-  // check for water level
-  waterLevel = digitalRead(hallPin);
-
-if (!waterLevel) {
-  color = 1;
-  if(manualMode) 
-    manualModeF();
-  if (touchVal < touchSensitivity)
-    miniShow();
-
-  touchVal = touchRead(touchPin); // get the touch value
-  // growlight-like light spectrum
-  pixels.setBrightness(200);
-  pixels.fill(pixels.Color(255, 0, 255));
-  pixels.show();
-
-  // relay cycle
-  unsigned long currentMillis = millis();
-
- if((relayState == false) && (currentMillis - previousMillis2 >= OnTime) && !stateChange)
-  {
-    relayState = HIGH;  // Turn relay off
-    previousMillis2 = currentMillis;  // Remember the time
-    digitalWrite(relayPin, relayState);  // Update the actual LED
-    stateChange = false; // set stateChange to false
-  }
-  else if ((relayState == true) && (currentMillis - previousMillis2 >= OffTime)  || stateChange)
-  {
-    relayState = LOW;  // Turn relay on
-    previousMillis2 = currentMillis;  
-    digitalWrite(relayPin, relayState);   
-    stateChange = false;
-  }
-  Serial.println(rotation);
-  myStepper.step(rotation);
-}   
-// if water level is low, raise alert
-else 
-  waterAlert();
-}
-
