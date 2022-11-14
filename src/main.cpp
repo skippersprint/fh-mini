@@ -6,7 +6,7 @@
 #include <Stepper.h>
 
 // Hard coded definitions (pins and values)
-#define NUMPIXELS 1 
+#define NUMPIXELS 3 
 #define relayPin 2
 #define touchPin 4
 #define touchSensitivity 10
@@ -38,16 +38,16 @@ int hexVal = 16516088;
 unsigned short manualInterval = 30000;  // life of manualMode - in sync with timeout on App as well. App says - You will kill me!
 
 unsigned long previousMillis2 = 0;        // will store last time LED was updated
-unsigned long OnTime = 10000;           // defualt fog cycle
-unsigned long OffTime = 20000  - OnTime;
+unsigned long OnTime = 3000;           // defualt fog cycle
+unsigned long OffTime = 6000  - OnTime;
 
-const char *wifi_network_ssid = "hotispot";
+const char *wifi_network_ssid = "Induct Technologies";
 const char *wifi_network_password = "maas-1004";
 const char *soft_ap_ssid = "FarmHouse Pod 3";
 const char *soft_ap_password = "maas-1004";
 
 // Initialize neopixels
-Adafruit_NeoPixel pixels(1, 14, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(NUMPIXELS, 14, NEO_GRB + NEO_KHZ800);
 AsyncWebServer server(80); // accessible on port 80
 Stepper myStepper(stepsPerRevolution, IN1, IN3, IN2, IN4);
 
@@ -253,7 +253,7 @@ void manualModeF()
   while (millis() <= previousMillis + manualInterval && manualMode == true && !digitalRead(hallPin))
   {
     pixels.setBrightness(alphaVal);
-    pixels.setPixelColor(0, hexVal);
+    pixels.fill(hexVal, 0, NUMPIXELS);
     pixels.show();
     Serial.println(hexVal);
     if (relayState)
@@ -304,9 +304,9 @@ if (!waterLevel) {
     stateChange = false;
   }
   myStepper.step(rotation);
+  Serial.println(waterLevel);
 }   
 // if water level is low, raise alert
 else 
   waterAlert();
 }
-
