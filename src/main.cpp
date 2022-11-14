@@ -95,12 +95,12 @@ void serverCalls()
     request->send(200, "text/plain", "magenta"); 
   });
 
-  server.on("/manualMode", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/plain", "Control Mini manually");
+  server.on("/mode/false", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "Mini now in manual mode");
     manualMode = true; 
   });
 
-  server.on("/autoMode", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/mode/true", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "Mini now in auto mode");
     manualMode = false; 
   });
@@ -250,22 +250,17 @@ void manualModeF()
   int previousMillis = 0;
   previousMillis = millis();
 
-  while (millis() <= previousMillis + manualInterval && manualMode == true && !digitalRead(hallPin))
-  {
     pixels.setBrightness(alphaVal);
     pixels.fill(hexVal, 0, NUMPIXELS);
     pixels.show();
-    Serial.println(hexVal);
+    
     if (relayState)
       digitalWrite(relayPin, HIGH);
     else
       digitalWrite(relayPin, LOW);
     
     myStepper.step(rotation);
-  }
-  
-  manualMode = false;
-  
+    Serial.println("man mode");
   }
 
 void loop() {
@@ -274,13 +269,18 @@ void loop() {
   waterLevel = digitalRead(hallPin);
 
 if (!waterLevel) {
-  color = 1;
-  if(manualMode) 
-    manualModeF();
-  if (touchVal < touchSensitivity)
+if (touchVal < touchSensitivity) {
     miniShow();
-
+  }
   touchVal = touchRead(touchPin); // get the touch value
+  if(manualMode) {
+    manualModeF();
+    
+  }
+  else{
+  
+  Serial.println("auto mode");
+  
   // growlight-like light spectrum
   pixels.setBrightness(200);
   pixels.fill(pixels.Color(255, 0, 255));
@@ -303,8 +303,9 @@ if (!waterLevel) {
     digitalWrite(relayPin, relayState);   
     stateChange = false;
   }
-  myStepper.step(rotation);
-  Serial.println(waterLevel);
+  //myStepper.step(rotation);
+  //Serial.println(manualMode);
+}
 }   
 // if water level is low, raise alert
 else 
