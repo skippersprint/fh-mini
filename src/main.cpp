@@ -106,7 +106,7 @@ void serverCalls()
   });
     
 
-  server.on("/spin2", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/spin/2", HTTP_GET, [](AsyncWebServerRequest *request) {
     rotation = 1;
     request->send(200, "text/plain", "clockwise"); 
   });
@@ -280,6 +280,7 @@ if (touchVal < touchSensitivity) {
   else{
   
   Serial.println("auto mode");
+  myStepper.step(rotation);
   
   // growlight-like light spectrum
   pixels.setBrightness(200);
