@@ -7,7 +7,7 @@
 
 // Hard coded definitions (pins and values)
 #define NUMPIXELS 3 
-#define relayPin 2
+#define relayPin 15
 #define touchPin 4
 #define touchSensitivity 10
 #define hallPin 34
@@ -56,16 +56,6 @@ void serverCalls()
   server.on("/hello", HTTP_GET, [](AsyncWebServerRequest *request) { 
     request->send(200, "text/plain", "Connection sweet"); 
     });
-
-  server.on("/20", HTTP_GET, [](AsyncWebServerRequest *request) {
-    relayState = 0;
-    request->send(200, "text/plain", "relay on"); 
-  }); // inverted logic (Common anode)
-
-  server.on("/40", HTTP_GET, [](AsyncWebServerRequest *request) {
-    relayState = 1;
-    request->send(200, "text/plain", "relay off"); 
-  });
 
   server.on("/mg", HTTP_GET, [](AsyncWebServerRequest *request) {
     color = 0;
@@ -121,25 +111,92 @@ void serverCalls()
     request->send(200, "text/plain", "halt"); 
   });
 
-  server.on("/2", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/fog/1", HTTP_GET, [](AsyncWebServerRequest *request) {
+    relayState = 0;
+    request->send(200, "text/plain", "relay on"); 
+  }); // inverted logic (Common anode)
+
+  server.on("/fog/11", HTTP_GET, [](AsyncWebServerRequest *request) {
+    relayState = 1;
+    request->send(200, "text/plain", "relay off"); 
+  });
+
+
+  server.on("/fog/0", HTTP_GET, [](AsyncWebServerRequest * request) {
+     OnTime = 0;
+      OffTime = 1200000 - OnTime;
+      stateChange = true;
+      request->send(200, "text/plain", "0 min cycle set"); 
+  });
+
+  server.on("/fog/2", HTTP_GET, [](AsyncWebServerRequest * request) {
+      OnTime = 120000;
+      OffTime = 1200000 - OnTime;
+      stateChange = true;
+      request->send(200, "text/plain", "2 min cycle set");
+  });
+
+  server.on("/fog/4", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 240000;
+    OffTime = 1200000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "4 min cycle set");
+  });
+
+  server.on("/fog/6", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 360000;
+    OffTime = 1200000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "6 min cycle set");
+  });
+
+  server.on("/fog/8", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 480000;
+    OffTime = 1200000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "8 min cycle set");
+  });
+
+  server.on("/fog/10", HTTP_GET, [](AsyncWebServerRequest * request) {
     OnTime = 600000;
     OffTime = 1200000 - OnTime;
     stateChange = true;
     request->send(200, "text/plain", "10 min cycle set");
   });
 
-  server.on("/1", HTTP_GET, [](AsyncWebServerRequest * request) {
-      OnTime = 360000;
-      OffTime = 1200000 - OnTime;
-      stateChange = true;
-      request->send(200, "text/plain", "5 min cycle set");
+  server.on("/fog/12", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 720000;
+    OffTime = 1200000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "12 min cycle set");
   });
 
-  server.on("/0", HTTP_GET, [](AsyncWebServerRequest * request) {
-    OnTime = 5000;
-    OffTime = 10000 - OnTime;
+  server.on("/fog/14", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 840000;
+    OffTime = 1200000 - OnTime;
     stateChange = true;
-    request->send(200, "text/plain", "10 s cycle set");
+    request->send(200, "text/plain", "14 min cycle set");
+  });
+
+  server.on("/fog/16", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 960000;
+    OffTime = 1200000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "16 min cycle set");
+  });
+
+  server.on("/fog/18", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 1080000;
+    OffTime = 1200000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "18 min cycle set");
+  });
+
+  server.on("/fog/20", HTTP_GET, [](AsyncWebServerRequest * request) {
+    OnTime = 1200000;
+    OffTime = 1200000 - OnTime;
+    stateChange = true;
+    request->send(200, "text/plain", "20 min cycle set");
   });
   
 }
@@ -261,6 +318,8 @@ void manualModeF()
     
     myStepper.step(rotation);
     Serial.println("man mode");
+    Serial.print("Relay state :");
+    Serial.println(relayState);
   }
 
 void loop() {
