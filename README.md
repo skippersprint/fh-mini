@@ -1,4 +1,4 @@
-# fh-mini
+# fh-mini(Temporary Change)
 ESP32 based firmware for FH-Mini (an indoor smart planting device)
 
 http://www.funfarmhouse.in/
